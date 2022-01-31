@@ -444,10 +444,10 @@ if __name__ == "__main__":
     user_movie_mat = get_user_movie_mat(train_data,max_user,max_movie)
 
 
-    lr = 1e-3
+    lr = 2.5e-3
     dropout = 0.0
-    batch_size = 256
-    epochs = 10
+    batch_size = 128
+    epochs = 20
     top_k = 10
     factor_num = 32
     num_layers = 3
@@ -528,17 +528,22 @@ if __name__ == "__main__":
         best_epoch, best_hr, best_ndcg))
 
 
-    plt.figure();
-    plt.plot(losses);
-    plt.title(f"ncf-1 loss curve");
-    plt.xlabel("iters");
+    plt.figure(1)
+    plt.plot(losses)
+    plt.title(f"ncf-1 loss curve")
+    plt.suptitle(f"lr: {lr} | batch size: {batch_size}")
+    plt.xlabel("iters")
+    plt.savefig(f"{main_path}\\results\\loss__lr_{lr}__batch_{batch_size}.png")
 
-    plt.figure();
-    plt.plot(hr_val_list, label='val acc');
-    plt.plot(hr_train_list, label='train acc');
-    plt.title(f"accuracy");
-    plt.xlabel("epoch");
-    plt.legend();
+    plt.figure(2)
+    plt.plot(hr_val_list, label='val acc')
+    plt.plot(hr_train_list, label='train acc')
+    plt.title(f"accuracy")
+    plt.suptitle(f"lr: {lr} | batch size: {batch_size}")
+    plt.xlabel("epoch")
+    plt.legend()
+    plt.savefig(f"{main_path}\\results\\acc__lr_{lr}__batch_{batch_size}.png")
 
+    plt.show()
 
 
