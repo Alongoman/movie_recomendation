@@ -6,6 +6,8 @@ import random
 import pandas as pd
 import scipy.sparse as sp
 import pickle
+import argparse
+
 
 import torch
 import torch.nn as nn
@@ -162,6 +164,7 @@ class NCFData(data.Dataset):
         self.labels = [0]*len(features)
 
     def neg_sample(self):
+        print("sampling unrecommended movies for dataset...")
         self.features_fill = []
         self.labels_fill = []
         for x in self.features_pos:
@@ -223,25 +226,8 @@ def metrics(model, d_loader, top_k):
 
     return np.mean(HR), np.mean(NDCG)
 
-def metrics_train(model, train_acc_loader, top_k):
-    HR, NDCG = [], []
-    u_count = 0
-    for user, movie, r, label in train_acc_loader:
-        u_count += 1
-        print(f"train eval: {round(100*u_count/len(train_acc_loader),2)}%")
-        predictions = model(user, movie)
-        _, indices = torch.topk(predictions, top_k)
-        recommends = torch.take(movie, indices).cpu().numpy().tolist()
 
-        pos_movie = movie[0].item()
-        HR.append(hit(pos_movie, recommends))
-        NDCG.append(ndcg(pos_movie, recommends))
-
-    return np.mean(HR), np.mean(NDCG)
-
-
-
-class NCF(nn.Module):
+class NCF_article(nn.Module):
     def __init__(self, user_num, item_num, factor_num, num_layers,
                  dropout, model, GMF_model=None, MLP_model=None):
         super(NCF, self).__init__()
@@ -259,6 +245,7 @@ class NCF(nn.Module):
         self.model = model
         self.GMF_model = GMF_model
         self.MLP_model = MLP_model
+        self.name = "NCF_article_"+model
 
         self.embed_user_GMF = nn.Embedding(user_num, factor_num)
         self.embed_item_GMF = nn.Embedding(item_num, factor_num)
@@ -350,12 +337,11 @@ class NCF(nn.Module):
         return prediction.view(-1)
 
 
-#@title NCF_1 model
-class NCF_1(nn.Module):
+class NCF(nn.Module):
     '''description'''
     def __init__(self, user_count, movie_count, embedding_size=32, hidden_layers=(64,32,16,8), dropout_rate=None, output_range=(0,1)):
         super().__init__()
-
+        self.name = "NCF"
         self.user_hash_size = user_count
         self.movie_hash_size = movie_count
         self.user_embbeding = nn.Embedding(num_embeddings=user_count, embedding_dim=embedding_size)
@@ -409,15 +395,20 @@ class NCF_1(nn.Module):
         if hasattr(self,'dropout'):
             x = self.dropout(x)
         x = self.mlp(x)
-        normalized_output = x
-        # normalized_output = x*self.norm_range + self.norm_min
-        return normalized_output
+        return x.view(-1)
 
 
+def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_size=32, num_layers=3,num_neg=3,test_num_neg=99, save_weights=True, show_graph=True, generate_new_data=False):
 
-if __name__ == "__main__":
+    hidden = []
+    for i in range(num_layers):
+        s = (2*embedding_size)/(2**i)
+        if s < 2 :
+            break
+        hidden.append(int(s))
+    hidden_layers = tuple(hidden)
 
-
+    t0 = time.time()
 
     main_path = os.getcwd()
 
@@ -427,34 +418,26 @@ if __name__ == "__main__":
     data_save_path = os.path.join(main_path,'post_process/')
     print(f"save file path: {data_save_path}")
 
+    if generate_new_data:
+        train_data, train_data_for_acc, test_data, val_data, max_user, max_movie, user_movie_mat = load_data()
+        save(train_data, f"{data_save_path}train__thresh_{label_threshold}.pkl")
+        save(train_data_for_acc, f"{data_save_path}train_for_acc__thresh_{label_threshold}.pkl")
+        save(test_data, f"{data_save_path}test__thresh_{label_threshold}.pkl")
+        save(val_data, f"{data_save_path}val__thresh_{label_threshold}.pkl")
 
-    # train_data, train_data_for_acc, test_data, val_data, max_user, max_movie, user_movie_mat = load_data()
-
-    #load data
-    parsed_data = np.array([elem[0].split("::")[:-1] for elem in ratings.values],dtype=int)
-    max_user = parsed_data[:,0].max() + 1
-    max_movie = parsed_data[:,1].max() + 1
-    users_set = set(parsed_data[:,0])
-    movies_set = set(parsed_data[:,1])
-    sample_num = "all"
-    train_data = load(f"{data_save_path}train_samples_{sample_num}.pkl")
-    train_data_for_acc = load(f"{data_save_path}train_for_acc_samples_{sample_num}.pkl")
-    test_data = load(f"{data_save_path}test_samples_{sample_num}.pkl")
-    val_data = load(f"{data_save_path}val_samples_{sample_num}.pkl")
-    user_movie_mat = get_user_movie_mat(train_data,max_user,max_movie)
-
-
-    lr = 2.5e-3
-    dropout = 0.0
-    batch_size = 128
-    epochs = 20
-    top_k = 10
-    factor_num = 32
-    num_layers = 3
-    num_neg = 4
-    test_num_neg = 99
-    out = True
-    gpu = "0"
+    else:
+        #load data
+        parsed_data = np.array([elem[0].split("::")[:-1] for elem in ratings.values],dtype=int)
+        max_user = parsed_data[:,0].max() + 1
+        max_movie = parsed_data[:,1].max() + 1
+        users_set = set(parsed_data[:,0])
+        movies_set = set(parsed_data[:,1])
+        sample_num = "all"
+        train_data = load(f"{data_save_path}train_samples_{sample_num}.pkl")
+        train_data_for_acc = load(f"{data_save_path}train_for_acc_samples_{sample_num}.pkl")
+        test_data = load(f"{data_save_path}test_samples_{sample_num}.pkl")
+        val_data = load(f"{data_save_path}val_samples_{sample_num}.pkl")
+        user_movie_mat = get_user_movie_mat(train_data,max_user,max_movie)
 
 
     # construct the train and test datasets
@@ -463,13 +446,15 @@ if __name__ == "__main__":
     val_dataset = NCFData(val_data, max_movie, user_movie_mat,test_num_neg)
     train_acc_dataset = NCFData(train_data_for_acc, max_movie, user_movie_mat,test_num_neg)
 
-    train_loader = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+    train_loader = data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     test_loader = data.DataLoader(test_dataset,	batch_size=test_num_neg+1, shuffle=False, num_workers=0)
-    val_loader = data.DataLoader(val_dataset,	batch_size=test_num_neg+1, shuffle=False, num_workers=0)
-    train_acc_loader = data.DataLoader(train_acc_dataset,	batch_size=test_num_neg+1, shuffle=False, num_workers=0)
+    val_loader = data.DataLoader(val_dataset, batch_size=test_num_neg+1, shuffle=False, num_workers=0)
+    train_acc_loader = data.DataLoader(train_acc_dataset, batch_size=test_num_neg+1, shuffle=False, num_workers=0)
 
 
-    model = NCF(max_user, max_movie, factor_num, num_layers,	dropout, model="MLP")
+    # model = NCF_article(max_user, max_movie, embedding_size, num_layers,	dropout, model="MLP")
+    model = NCF(user_count=max_user, movie_count=max_movie, embedding_size=embedding_size, hidden_layers=hidden_layers, dropout_rate=dropout)
+    print(f"model name: {model.name}")
 
     val_loader.dataset.neg_sample()
     train_acc_loader.dataset.neg_sample()
@@ -477,11 +462,10 @@ if __name__ == "__main__":
     loss_function = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    # writer = SummaryWriter() # for visualization
-
     ########################### TRAINING #####################################
     count, best_hr = 0, 0
     hr_train_list, hr_val_list = [],[]
+    ndgc_train_list, ndgc_val_list = [],[]
     losses = []
     for epoch in range(epochs):
         model.train() # Enable dropout (if have).
@@ -506,19 +490,21 @@ if __name__ == "__main__":
 
         losses.append(avg_loss/count)
         model.eval()
-        HR_val, NDCG = metrics(model, val_loader, top_k)
-        HR_train, NDCG = metrics(model, train_acc_loader, top_k)
+        HR_val, NDCG_val = metrics(model, val_loader, top_k)
+        HR_train, NDCG_train = metrics(model, train_acc_loader, top_k)
         hr_val_list.append(HR_val)
         hr_train_list.append(HR_train)
+        ndgc_val_list.append(NDCG_val)
+        ndgc_train_list.append(NDCG_train)
         elapsed_time = time.time() - start_time
         print("The time elapse of epoch {:03d}".format(epoch) + " is: " +
               time.strftime("%H: %M: %S", time.gmtime(elapsed_time)))
-        print("HR val: {:.3f}\tNDCG: {:.3f}".format(np.mean(HR_val), np.mean(NDCG)))
-        print("HR train: {:.3f}\tNDCG: {:.3f}".format(np.mean(HR_train), np.mean(NDCG)))
+        print("HR val: {:.3f}\tNDCG: {:.3f}".format(HR_val, NDCG_val))
+        print("HR train: {:.3f}\tNDCG: {:.3f}".format(HR_train, NDCG_train))
 
         if HR_val > best_hr:
-            best_hr, best_ndcg, best_epoch = HR_val, NDCG, epoch
-            # if out:
+            best_hr, best_ndcg, best_epoch = HR_val, NDCG_val, epoch
+            # if save_weights:
             # if not os.path.exists(model_path):
             # 	os.mkdir(model_path)
             # torch.save(model,
@@ -528,22 +514,71 @@ if __name__ == "__main__":
         best_epoch, best_hr, best_ndcg))
 
 
+    print(f"total time elapsed is: {time.strftime('%H: %M: %S', time.gmtime(time.time()-t0))}")
+
     plt.figure(1)
     plt.plot(losses)
-    plt.title(f"ncf-1 loss curve")
-    plt.suptitle(f"lr: {lr} | batch size: {batch_size}")
+    plt.title(f"{model.name} loss curve")
+    plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("iters")
-    plt.savefig(f"{main_path}\\results\\loss__lr_{lr}__batch_{batch_size}.png")
+    plt.savefig(f"{main_path}\\results\\{model.name}__loss__lr_{lr}__batch_{batch_size}__emb_size_{embedding_size}__layers_{hidden_layers}.png")
 
     plt.figure(2)
     plt.plot(hr_val_list, label='val acc')
     plt.plot(hr_train_list, label='train acc')
-    plt.title(f"accuracy")
-    plt.suptitle(f"lr: {lr} | batch size: {batch_size}")
+    plt.title(f"{model.name} HR@10 accuracy | best val acc={round(best_hr,3)}")
+    plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("epoch")
     plt.legend()
-    plt.savefig(f"{main_path}\\results\\acc__lr_{lr}__batch_{batch_size}.png")
+    plt.savefig(f"{main_path}\\results\\{model.name}__hr10_acc_{round(best_hr,3)}__lr_{lr}__batch_{batch_size}__emb_size_{embedding_size}__layers_{hidden_layers}.png")
 
-    plt.show()
+    plt.figure(3)
+    plt.plot(ndgc_val_list, label='val acc')
+    plt.plot(ndgc_train_list, label='train acc')
+    plt.title(f"{model.name} NDGC accuracy | best val acc={round(best_ndcg,3)}")
+    plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
+    plt.xlabel("epoch")
+    plt.legend()
+    plt.savefig(f"{main_path}\\results\\{model.name}__ndgc_acc_{round(best_ndcg,3)}__lr_{lr}__batch_{batch_size}__emb_size_{embedding_size}__layers_{hidden_layers}.png")
 
+    if show_graph:
+        plt.show()
+
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-lr', '--learning_rate', default=1e-3,help="learning rate")
+    parser.add_argument('--dropout', default=0.0,help="dropout rate")
+    parser.add_argument('-b', '--batch_size', default=256,help="batch size")
+    parser.add_argument('-e', '--epochs', default=1,help="how many epochs to run")
+    parser.add_argument('-k', '--topk', default=10,help="tok k number, for HR@k")
+    parser.add_argument('-emb', '--embedding_size', default=32,help="dimension of the embedding layer")
+    parser.add_argument('--layers', default=3,help="layers number, max is 1 + log2(embedding_size)")
+    parser.add_argument('--num_neg', default=3,help="for each recommended movie will add N unrecomended movies to the train set")
+    parser.add_argument('--test_num_neg', default=99,help="for each recommended movie will add N unrecomended movies to the validation and test set")
+    parser.add_argument('--save_weights', action='store_true',help="save best weights")
+    parser.add_argument('--show_graph', action='store_true',help="print graphs, the program will not end until all graphs are closed")
+    parser.add_argument('--generate_data', action='store_true',help="generate all the data from scratch, long process")
+    args = parser.parse_args()
+
+    lr = args.learning_rate
+    dropout = args.dropout
+    batch_size = args.batch_size
+    epochs = args.epochs
+    top_k = args.topk
+    embedding_size = args.embedding_size
+    num_layers = args.layers
+    num_neg = args.num_neg
+    test_num_neg = args.test_num_neg
+    save_weights = args.save_weights
+    show_graph = args.show_graph
+    gpu = "0"
+    label_threshold = 0
+    generate_new_data = args.generate_data
+
+    Train(lr=lr, dropout=dropout, batch_size=batch_size, epochs=epochs, top_k=top_k, embedding_size=embedding_size,
+          num_layers=num_layers, num_neg=num_neg, test_num_neg=test_num_neg, save_weights=save_weights,
+          show_graph=show_graph, generate_new_data=generate_new_data)
 
