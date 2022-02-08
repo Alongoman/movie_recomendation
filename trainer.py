@@ -521,7 +521,7 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     plt.title(f"{model.name} loss curve")
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("iters")
-    plt.savefig(f"{main_path}\\results\\{model.name}__loss__lr_{lr}__batch_{batch_size}__emb_size_{embedding_size}__layers_{hidden_layers}.png")
+    plt.savefig(f"{main_path}\\results\\{model.name}__loss__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
 
     plt.figure(2)
     plt.plot(hr_val_list, label='val acc')
@@ -530,7 +530,7 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("epoch")
     plt.legend()
-    plt.savefig(f"{main_path}\\results\\{model.name}__hr10_acc_{round(best_hr,3)}__lr_{lr}__batch_{batch_size}__emb_size_{embedding_size}__layers_{hidden_layers}.png")
+    plt.savefig(f"{main_path}\\results\\{model.name}__hr10_acc_{round(best_hr,3)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
 
     plt.figure(3)
     plt.plot(ndgc_val_list, label='val acc')
@@ -539,7 +539,7 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("epoch")
     plt.legend()
-    plt.savefig(f"{main_path}\\results\\{model.name}__ndgc_acc_{round(best_ndcg,3)}__lr_{lr}__batch_{batch_size}__emb_size_{embedding_size}__layers_{hidden_layers}.png")
+    plt.savefig(f"{main_path}\\results\\{model.name}__ndgc_acc_{round(best_ndcg,3)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
 
     if show_graph:
         plt.show()
