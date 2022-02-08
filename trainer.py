@@ -40,7 +40,7 @@ def get_time_remained(time_remained):
 
 
 
-def load_data(movies_count_for_test=1, good_movie_tresh=0):
+def load_data(ratings, movies_count_for_test=1, good_movie_tresh=0):
     sample_num = None
 
     parsed_data = np.array([elem[0].split("::")[:-1] for elem in ratings.values],dtype=int)
@@ -398,7 +398,7 @@ class NCF(nn.Module):
         return x.view(-1)
 
 
-def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_size=32, num_layers=3,num_neg=3,test_num_neg=99, save_weights=True, show_graph=True, generate_new_data=False):
+def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_size=32, num_layers=3,num_neg=3,test_num_neg=99, save_weights=True, show_graph=True, generate_new_data=False, recomendation_num=0):
 
     hidden = []
     for i in range(num_layers):
@@ -415,11 +415,15 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     ratings_path = f"{main_path}/ml-1m/ratings.dat"
     ratings = pd.read_csv(ratings_path)
 
+    movies_path = f"{main_path}/ml-1m/movies.dat"
+    movies_data = pd.read_csv(movies_path,names=["data"],encoding="latin-1", sep="\t")
+
+
     data_save_path = os.path.join(main_path,'post_process/')
     print(f"save file path: {data_save_path}")
 
     if generate_new_data:
-        train_data, train_data_for_acc, test_data, val_data, max_user, max_movie, user_movie_mat = load_data()
+        train_data, train_data_for_acc, test_data, val_data, max_user, max_movie, user_movie_mat = load_data(ratings)
         save(train_data, f"{data_save_path}train__thresh_{label_threshold}.pkl")
         save(train_data_for_acc, f"{data_save_path}train_for_acc__thresh_{label_threshold}.pkl")
         save(test_data, f"{data_save_path}test__thresh_{label_threshold}.pkl")
@@ -452,7 +456,6 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     train_acc_loader = data.DataLoader(train_acc_dataset, batch_size=test_num_neg+1, shuffle=False, num_workers=0)
 
 
-    # model = NCF_article(max_user, max_movie, embedding_size, num_layers,	dropout, model="MLP")
     model = NCF(user_count=max_user, movie_count=max_movie, embedding_size=embedding_size, hidden_layers=hidden_layers, dropout_rate=dropout)
     print(f"model name: {model.name}")
 
@@ -544,6 +547,20 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     if show_graph:
         plt.show()
 
+    if recomendation_num:
+        get_recomendation(model=model,movies_data=movies_data, max_user=max_user, max_movie=max_movie, recomendation_num=recomendation_num)
+
+
+def get_recomendation(model,movies_data, max_user, max_movie, recomendation_num=10):
+    user_tensor = torch.Tensor([max_user-1]*max_movie)
+    movie_tensor = torch.Tensor([m for m in range(max_movie)])
+    predictions = model(user_tensor,movie_tensor)
+    _, indices = torch.topk(predictions, recomendation_num)
+    recommends = torch.take(movie_tensor, indices).cpu().numpy().tolist()
+    for r in recommends:
+        movie_name = movies_data["data"][int(r)-1].split("::")[1]
+        movie_genre = movies_data["data"][int(r)-1].split("::")[2]
+        print(f"{movie_name} :: {movie_genre}")
 
 
 if __name__ == "__main__":
@@ -561,6 +578,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_weights', action='store_true',help="save best weights")
     parser.add_argument('--show_graph', action='store_true',help="print graphs, the program will not end until all graphs are closed")
     parser.add_argument('--generate_data', action='store_true',help="generate all the data from scratch, long process")
+    parser.add_argument('--recomendation_num', default=0,help="change this value in order to get more/less recomendations")
     args = parser.parse_args()
 
     lr = args.learning_rate
@@ -577,8 +595,9 @@ if __name__ == "__main__":
     gpu = "0"
     label_threshold = 0
     generate_new_data = args.generate_data
+    recomendation_num = args.recomendation_num
 
     Train(lr=lr, dropout=dropout, batch_size=batch_size, epochs=epochs, top_k=top_k, embedding_size=embedding_size,
           num_layers=num_layers, num_neg=num_neg, test_num_neg=test_num_neg, save_weights=save_weights,
-          show_graph=show_graph, generate_new_data=generate_new_data)
+          show_graph=show_graph, generate_new_data=generate_new_data, recomendation_num=recomendation_num)
 
