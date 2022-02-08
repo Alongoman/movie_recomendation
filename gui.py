@@ -18,7 +18,6 @@ for i,elem in enumerate(movies_data["data"]):
 window = Tk()
 window.title('Movies recomendation - NCF | Alongoman & Yogevhad 2022')
 window.geometry("500x500")
-# for scrolling vertically
 yscrollbar = Scrollbar(window)
 yscrollbar.pack(side = RIGHT, fill = Y)
 
@@ -26,9 +25,7 @@ label = Label(window,text="Select the movies you saw and liked :  ", font=("Time
 label.pack()
 items = Listbox(window, selectmode="multiple", yscrollcommand=yscrollbar.set)
 
-# Widget expands horizontally and
-# vertically by assigning both to
-# fill option
+
 items.pack(padx=10, pady=10, expand=YES, fill="both")
 
 
@@ -36,7 +33,6 @@ for each_item in range(len(movies)):
     items.insert(END, movies[each_item])
     items.itemconfig(each_item, bg="yellow")
 
-# Attach listbox to vertical scrollbar
 yscrollbar.config(command = items.yview)
 
 def showSelected(user_movies):
@@ -63,5 +59,6 @@ window.mainloop()
 
 print("training the model to get recomendations")
 
+# insert best parameters here
 trainer.Train(lr=1e-3, batch_size=200, embedding_size=32, epochs=20, top_k=10, num_layers=3,
               save_weights=True, show_graph=False, recomendation_num=30)
