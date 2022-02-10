@@ -470,7 +470,7 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     hr_train_list, hr_val_list = [],[]
     ndgc_train_list, ndgc_val_list = [],[]
     losses = []
-    for epoch in range(epochs):
+    for epoch in range(1,epochs+1):
         model.train() # Enable dropout (if have).
         start_time = time.time()
         train_loader.dataset.neg_sample() # add unrecomended movies to dataset
@@ -530,21 +530,21 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     plt.figure()
     plt.plot(hr_val_list, label='val acc')
     plt.plot(hr_train_list, label='train acc')
-    plt.title(f"{model.name} HR@10 accuracy | best val acc={round(best_hr,3)}")
+    plt.title(f"{model.name} HR@10 accuracy | best val acc={round(best_hr,4)}")
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("epoch")
     plt.legend()
-    file_name = os.path.join(main_path,f"results/{model.name}__hr10_acc_{round(best_hr,3)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png") 
+    file_name = os.path.join(main_path,f"results/{model.name}__hr10_acc_{round(best_hr,4)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
     plt.savefig(file_name)
 
     plt.figure()
     plt.plot(ndgc_val_list, label='val acc')
     plt.plot(ndgc_train_list, label='train acc')
-    plt.title(f"{model.name} NDGC accuracy | best val acc={round(best_ndcg,3)}")
+    plt.title(f"{model.name} NDGC accuracy | best val acc={round(best_ndcg,4)}")
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("epoch")
     plt.legend()
-    file_name = os.path.join(main_path,f"results/{model.name}__ndgc_acc_{round(best_ndcg,3)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png") 
+    file_name = os.path.join(main_path,f"results/{model.name}__ndgc_acc_{round(best_ndcg,4)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
     plt.savefig(file_name)
 
     if show_graph:
