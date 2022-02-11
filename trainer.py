@@ -398,7 +398,12 @@ class NCF(nn.Module):
         return x.view(-1)
 
 
-def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_size=32, num_layers=3,num_neg=3,test_num_neg=99, save_weights=True, show_graph=True, generate_new_data=False, recomendation_num=0):
+def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_size=32, num_layers=3,num_neg=3,test_num_neg=99, save_weights=True,
+          show_graph=True, save_graphs=True, generate_new_data=False, recomendation_num=0, user_movies=[]):
+
+    recomendation_mode = False
+    if recomendation_num and len(user_movies) > 2:
+        recomendation_mode = True
 
     hidden = []
     for i in range(num_layers):
@@ -441,8 +446,16 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
         train_data_for_acc = load(f"{data_save_path}train_for_acc_samples_{sample_num}.pkl")
         test_data = load(f"{data_save_path}test_samples_{sample_num}.pkl")
         val_data = load(f"{data_save_path}val_samples_{sample_num}.pkl")
-        user_movie_mat = get_user_movie_mat(train_data,max_user,max_movie)
+        if recomendation_mode:
+            user_movie_mat = get_user_movie_mat(train_data,max_user,max_movie)
 
+    if recomendation_mode:
+        for id,m in user_movies:
+            train_data.append([max_user, id, 5.0])
+        val_data.append(train_data.pop())
+        test_data.append(train_data.pop())
+        max_user += 1
+        user_movie_mat = get_user_movie_mat(train_data,max_user,max_movie)
 
     # construct the train and test datasets
     train_dataset = NCFData(train_data, max_movie, user_movie_mat, num_neg)
@@ -524,8 +537,9 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     plt.title(f"{model.name} loss curve")
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("iters")
-    file_name = os.path.join(main_path,f"results/{model.name}__loss__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png") 
-    plt.savefig(file_name)
+    if save_graphs:
+        file_name = os.path.join(main_path,f"results/{model.name}__loss__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
+        plt.savefig(file_name)
 
     plt.figure()
     plt.plot(hr_val_list, label='val acc')
@@ -534,8 +548,9 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("epoch")
     plt.legend()
-    file_name = os.path.join(main_path,f"results/{model.name}__hr10_acc_{round(best_hr,4)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
-    plt.savefig(file_name)
+    if save_graphs:
+        file_name = os.path.join(main_path,f"results/{model.name}__hr10_acc_{round(best_hr,4)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
+        plt.savefig(file_name)
 
     plt.figure()
     plt.plot(ndgc_val_list, label='val acc')
@@ -544,27 +559,34 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     plt.suptitle(f"lr: {lr} | batch size: {batch_size} | layers: {hidden_layers}")
     plt.xlabel("epoch")
     plt.legend()
-    file_name = os.path.join(main_path,f"results/{model.name}__ndgc_acc_{round(best_ndcg,4)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
-    plt.savefig(file_name)
+    if save_graphs:
+        file_name = os.path.join(main_path,f"results/{model.name}__ndgc_acc_{round(best_ndcg,4)}__lr_{lr}__batch_{batch_size}__layers_{hidden_layers}.png")
+        plt.savefig(file_name)
 
     if show_graph:
         plt.show()
 
-    if recomendation_num:
-        get_recomendation(model=model,movies_data=movies_data, max_user=max_user, max_movie=max_movie, recomendation_num=recomendation_num)
+    if recomendation_mode:
+        get_recomendation(model=model,movies_data=movies_data, max_user=max_user, max_movie=max_movie, recomendation_num=recomendation_num, epochs=epoch, hr_acc=best_hr)
 
 
-def get_recomendation(model,movies_data, max_user, max_movie, recomendation_num=10):
+def get_recomendation(model,movies_data, max_user, max_movie, recomendation_num=10, epochs=0, hr_acc=0):
     user_tensor = torch.Tensor([max_user-1]*max_movie)
     movie_tensor = torch.Tensor([m for m in range(max_movie)])
     predictions = model(user_tensor,movie_tensor)
     _, indices = torch.topk(predictions, recomendation_num)
     recommends = torch.take(movie_tensor, indices).cpu().numpy().tolist()
+
+    print("################################################")
+    print()
+    print(f"here are your recomendations after {epochs} epochs, expected to have {round(100*hr_acc,2)}% to get at least 1 good recomendations in the first 10 movies")
+    print()
     for r in recommends:
         movie_name = movies_data["data"][int(r)-1].split("::")[1]
         movie_genre = movies_data["data"][int(r)-1].split("::")[2]
         print(f"{movie_name} :: {movie_genre}")
-
+    print()
+    print("you should try some of the above !")
 
 if __name__ == "__main__":
 
