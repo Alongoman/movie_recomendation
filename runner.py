@@ -3,7 +3,7 @@ import trainer
 
 lr = [5e-4]#[5e-3,1e-3,5e-4]
 batch_size = [300]
-epochs = 15#30
+epochs = 30
 topk = 10
 embedding_size = [32]
 num_layers = [3]#,4,5]
