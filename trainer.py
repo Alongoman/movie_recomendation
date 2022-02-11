@@ -446,7 +446,7 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
         train_data_for_acc = load(f"{data_save_path}train_for_acc_samples_{sample_num}.pkl")
         test_data = load(f"{data_save_path}test_samples_{sample_num}.pkl")
         val_data = load(f"{data_save_path}val_samples_{sample_num}.pkl")
-        if recomendation_mode:
+        if not(recomendation_mode):
             user_movie_mat = get_user_movie_mat(train_data,max_user,max_movie)
 
     if recomendation_mode:
