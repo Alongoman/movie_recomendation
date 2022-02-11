@@ -232,6 +232,8 @@ class NCF(nn.Module):
     def __init__(self, user_count, movie_count, embedding_size=32, hidden_layers=(64,32,16,8), dropout_rate=None, output_range=(0,1), use_avg_rating=False):
         super().__init__()
         self.name = "NCF"
+        if use_avg_rating:
+            self.name += "_explicit"
         self.use_avg_rating = use_avg_rating
         self.user_hash_size = user_count
         self.movie_hash_size = movie_count
