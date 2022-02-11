@@ -35,7 +35,7 @@ for each_item in range(len(movies)):
 
 yscrollbar.config(command = items.yview)
 
-def showSelected(user_movies):
+def ShowSaveSelected(user_movies):
     user_movies.clear()
     names = items.curselection()
     for i in names:
@@ -52,7 +52,7 @@ def showSelected(user_movies):
 
 user_movies = []
 
-btn = Button(window, text='Print Selected', command=lambda: showSelected(user_movies))
+btn = Button(window, text='Print Selected', command=lambda: ShowSaveSelected(user_movies))
 
 btn.pack(side='bottom')
 
