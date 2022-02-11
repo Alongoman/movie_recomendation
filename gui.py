@@ -1,7 +1,7 @@
 from tkinter import *
 import os
 import pandas as pd
-# from movie_recomendation import trainer
+from movie_recomendation import trainer
 
 
 main_path = os.getcwd()
