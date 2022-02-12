@@ -250,6 +250,7 @@ class NCF(nn.Module):
         self.norm_range = abs(output_range[0]-output_range[1])+1
         self._init_params()
 
+
     def _gen_MLP(self, embedding_size, hidden_layers_units, dropout_rate):
         ''' generate the multi layer preceptor'''
         assert (embedding_size*2) == hidden_layers_units[0], "first input layer number hidden must be equal to twice the embbeding size"
