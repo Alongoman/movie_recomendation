@@ -519,7 +519,6 @@ if __name__ == "__main__":
     test_num_neg = args.test_num_neg
     save_weights = args.save_weights
     show_graph = args.show_graph
-    gpu = "0"
     label_threshold = 0
     generate_new_data = args.generate_data
     recomendation_num = args.recomendation_num
