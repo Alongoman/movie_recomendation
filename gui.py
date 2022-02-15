@@ -35,7 +35,7 @@ for each_item in range(len(movies)):
 
 yscrollbar.config(command = items.yview)
 
-def showSelected(user_movies):
+def ShowSaveSelected(user_movies):
     user_movies.clear()
     names = items.curselection()
     for i in names:
@@ -46,12 +46,13 @@ def showSelected(user_movies):
     for val in user_movies:
         print(f"\t {val[1]}")
 
-    print("if you sure in this selction please close the window")
+    print(f"you selected {len(user_movies)} movies you liked, if you sure in this selction " +
+          f"please close the window to train the DNN and get recomendations")
 
 
 user_movies = []
 
-btn = Button(window, text='Print Selected', command=lambda: showSelected(user_movies))
+btn = Button(window, text='Print Selected', command=lambda: ShowSaveSelected(user_movies))
 
 btn.pack(side='bottom')
 
@@ -60,5 +61,5 @@ window.mainloop()
 print("training the model to get recomendations")
 
 # insert best parameters here
-trainer.Train(lr=1e-3, batch_size=200, embedding_size=32, epochs=20, top_k=10, num_layers=3,
-              save_weights=True, show_graph=False, recomendation_num=30)
+trainer.Train(lr=5e-4, batch_size=300, embedding_size=32, epochs=10, top_k=10, num_layers=3,
+              save_weights=True, show_graph=False, save_graphs=False, recomendation_num=20, user_movies=user_movies)
