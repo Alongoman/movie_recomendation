@@ -8,7 +8,6 @@ import scipy.sparse as sp
 import pickle
 import argparse
 
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -376,6 +375,7 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     val_loader.dataset.neg_sample()
     train_acc_loader.dataset.neg_sample()
 
+
     loss_function = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -432,7 +432,15 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
         best_epoch, best_hr, best_ndcg))
 
 
+    test_loader.dataset.neg_sample()
+    model.eval()
+    HR_test, NDCG_test = metrics(model, test_loader, top_k)
+
     print(f"total time elapsed is: {time.strftime('%H: %M: %S', time.gmtime(time.time()-t0))}")
+    print("___________________________ test accuracy ___________________________")
+    print(f"test set HR@{top_k} accuracy: {round(100*HR_test,5)}%")
+    print(f"test set NDCG@{top_k} accuracy: {round(100*NDCG_test,5)}%")
+    print("_____________________________________________________________________")
 
     plt.figure()
     plt.plot(losses)

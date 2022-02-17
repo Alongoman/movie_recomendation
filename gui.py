@@ -61,5 +61,5 @@ window.mainloop()
 print("training the model to get recomendations")
 
 # insert best parameters here
-trainer.Train(lr=5e-4, batch_size=300, embedding_size=32, epochs=10, top_k=10, num_layers=3,
+trainer.Train(lr=1e-3, batch_size=100, embedding_size=32, epochs=10, top_k=10, num_layers=3,
               save_weights=True, show_graph=False, save_graphs=False, recomendation_num=20, user_movies=user_movies)

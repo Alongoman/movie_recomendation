@@ -1,18 +1,18 @@
 import trainer
 
 
-lr = [5e-3,1e-3,5e-4]
+lr = [1e-3]
 batch_size = [100]
-epochs = 30
+num_layers = [3]
+epochs = 12
 topk = 10
 embedding_size = [32]
-num_layers = [3,4]
-dropout = 0.5
+dropout = 0.0
 generate_new_data = False
 save_weights = True
-show_graph = False
-save_graphs = True
-use_avg_rating = True
+show_graph = True
+save_graphs = False
+use_avg_rating = False
 
 
 
