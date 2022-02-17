@@ -438,8 +438,8 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
 
     print(f"total time elapsed is: {time.strftime('%H: %M: %S', time.gmtime(time.time()-t0))}")
     print("___________________________ test accuracy ___________________________")
-    print(f"test set HR@{top_k} accuracy: {round(100*HR_test,5)}%")
-    print(f"test set NDCG@{top_k} accuracy: {round(100*NDCG_test,5)}%")
+    print(f"test set HR@{top_k} accuracy: {round(HR_test,5)}")
+    print(f"test set NDCG@{top_k} accuracy: {round(NDCG_test,5)}")
     print("_____________________________________________________________________")
 
     plt.figure()
