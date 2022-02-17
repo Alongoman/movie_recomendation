@@ -1,7 +1,7 @@
 from tkinter import *
 import os
 import pandas as pd
-from movie_recomendation import trainer
+import trainer
 
 
 main_path = os.getcwd()
@@ -21,7 +21,7 @@ window.geometry("500x500")
 yscrollbar = Scrollbar(window)
 yscrollbar.pack(side = RIGHT, fill = Y)
 
-label = Label(window,text="Select the movies you saw and liked :  ", font=("Times New Roman", 10), padx=10, pady=10)
+label = Label(window,text="Select the movies you saw and liked (close window to continue) :  ", font=("Times New Roman", 10), padx=10, pady=10)
 label.pack()
 items = Listbox(window, selectmode="multiple", yscrollcommand=yscrollbar.set)
 

@@ -402,7 +402,6 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
             loss = loss_function(prediction, label)
             loss.backward()
             optimizer.step()
-            # writer.add_scalar('data/loss', loss.movie(), count)
             count += 1
             avg_loss += loss.item()
 
