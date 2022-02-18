@@ -212,12 +212,12 @@ def metrics(model, d_loader, top_k):
     u_count = 0
     for user, movie, r, label, avg_r in d_loader:
         u_count += 1
-        print(f"test eval: {round(100*u_count/len(d_loader),2)}%")
+        # print(f"test eval: {round(100*u_count/len(d_loader),2)}%")
         predictions = model(user, movie, avg_r.float())
         _, indices = torch.topk(predictions, top_k)
         recommends = torch.take(movie, indices).cpu().numpy().tolist()
 
-        print(f"user:{user[0]} | movie:{movie[0]} | rating:{r[0]}")
+        # print(f"user:{user[0]} | movie:{movie[0]} | rating:{r[0]}")
 
         pos_movie = movie[0].item() # first one is the actual watched movies from data
         HR.append(hit(pos_movie, recommends))
@@ -380,9 +380,10 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     ########################### TRAINING #####################################
-    count, best_hr = 0, 0
+    count = 0
     hr_train_list, hr_val_list = [],[]
     ndgc_train_list, ndgc_val_list = [],[]
+    best_hr, best_ndcg, best_epoch = 0,0,0
     losses = []
     for epoch in range(1,epochs+1):
         model.train() # Enable dropout (if have).
@@ -392,7 +393,7 @@ def Train(lr=1e-3, dropout=0.0, batch_size=256, epochs=1, top_k=10, embedding_si
         avg_loss = 0
         for user, movie, r, label, avg_r in train_loader:
             u_count += 1
-            print(f"epoch {epoch}/{epochs} |train: {round(100*u_count/len(train_loader),2)}% | hr_test: {hr_val_list} | hr_train: {hr_train_list} | avg loss: {np.mean(losses)}")
+            print(f"epoch {epoch}/{epochs} |train: {round(100*u_count/len(train_loader),2)}% | best_hr_val: {best_hr} , best ndcg: {best_ndcg}, epoch: {best_epoch} | avg loss: {np.mean(losses)}")
             user = user.cpu()
             movie = movie.cpu()
             avg_r = avg_r.float().cpu()
